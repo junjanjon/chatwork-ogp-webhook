@@ -1,0 +1,24 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    chatwork_webhook_verify (0.1.0)
+    faraday (0.15.4)
+      multipart-post (>= 1.2, < 3)
+    mini_portile2 (2.4.0)
+    multipart-post (2.1.1)
+    nokogiri (1.10.3)
+      mini_portile2 (~> 2.4.0)
+    open_graph_reader (0.6.2)
+      faraday (>= 0.9.0)
+      nokogiri (~> 1.6)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  chatwork_webhook_verify
+  faraday
+  open_graph_reader
+
+BUNDLED WITH
+   1.17.2
