@@ -20,10 +20,10 @@ WATCH_ROOM_ID.split(',').each do |room_id|
 		response = "#{ogp_data[:title]}[hr]#{ogp_data[:description]}"
 
 		if ogp_data[:filename].nil?
-			%x(curl -v -X POST -H "X-ChatWorkToken: #{token}" -d 'body=#{response}&self_unread=1' "https://api.chatwork.com/v2/rooms/#{room_id}/messages")
+			%x(curl -v -X POST -H "X-ChatWorkToken: #{CHATWORK_TOKEN}" -d 'body=#{response}&self_unread=1' "https://api.chatwork.com/v2/rooms/#{room_id}/messages")
 		else
 			filepath = ogp_data[:filename]
-			%x(curl -v -X POST -H "X-ChatWorkToken: #{token}" -F"file=@#{filepath}" -F'message=#{response}' "https://api.chatwork.com/v2/rooms/#{room_id}/files")
+			%x(curl -v -X POST -H "X-ChatWorkToken: #{CHATWORK_TOKEN}" -F"file=@#{filepath}" -F'message=#{response}' "https://api.chatwork.com/v2/rooms/#{room_id}/files")
 		end
 		sleep(1)
 	end
