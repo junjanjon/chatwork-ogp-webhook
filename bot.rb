@@ -28,7 +28,7 @@ def main
   p me_account_id = get_me_account_id
   p unread_rooms = get_unread_rooms
 
-  unread_rooms.each do |room|
+  unread_rooms.reject { |room| room.role == 'readonly' }.each do |room|
     messages = ChatWork::Message.get(room_id: room.room_id)
 
     if messages.nil?
@@ -36,7 +36,7 @@ def main
       next
     end
 
-    messages[-([messages.length, 7].min)..-1].reject { |message| message.account.account_id == me_account_id }.each do |data|
+    messages[-[messages.length, 7].min..-1].reject { |message| message.account.account_id == me_account_id }.each do |data|
       ogp_data = parse(data.body)
       next if ogp_data.nil?
 
