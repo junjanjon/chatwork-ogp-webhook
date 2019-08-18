@@ -30,7 +30,7 @@ def getOpenGraph(url)
                          description_content.to_s
                        end
 
-  data[:image_url] = doc.css('//meta[property="og:image"]/@content').to_s
+  data[:image_url] = doc.css('//meta[property="og:image"]/@content').first.to_s
   data
 rescue StandardError => e
   p "失敗にゃ #{e}"
@@ -99,7 +99,7 @@ rescue StandardError => e
 end
 
 if $PROGRAM_NAME == __FILE__
-  # p parse("https://supersalariedman.blogspot.com/2018/11/blog-post_74.html").nil?
+  # p parse("https://twitter.com/bra_x_bla/status/1163057960114884608")
   # p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690').nil?
   # p parse('https://www.thanko.jp/shopdetail/000000003314/')
   # p parse('https://note.mu/rangatarou/n/n6541adc4c855').nil?
