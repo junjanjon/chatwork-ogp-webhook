@@ -98,6 +98,7 @@ def parse(message)
   unless ogp_data[:image_url].nil? || ogp_data[:image_url].empty?
     filename = download_image_file(ogp_data[:image_url])
     ogp_data[:filename] = filename
+    ogp_data[:title] = filename if ogp_data[:title].empty?
   end
 
   ogp_data
