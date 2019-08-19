@@ -5,6 +5,14 @@ require 'open-uri'
 require 'nokogiri'
 
 def getOpenGraph(url)
+  if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
+    return {
+      title: '',
+      image_url: url,
+      description: ''
+    }
+  end
+
   charset = nil
   html = open(url) do |f|
     charset = f.charset # 文字種別を取得
@@ -90,6 +98,7 @@ def parse(message)
   unless ogp_data[:image_url].nil? || ogp_data[:image_url].empty?
     filename = download_image_file(ogp_data[:image_url])
     ogp_data[:filename] = filename
+    ogp_data[:title] = filename if ogp_data[:title].empty?
   end
 
   ogp_data
