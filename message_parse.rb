@@ -3,6 +3,7 @@
 require 'faraday'
 require 'open-uri'
 require 'nokogiri'
+require 'uri'
 
 def get_open_graph_data(url)
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
@@ -85,11 +86,18 @@ def download_image_file(image_url)
   filename
 end
 
+def ignore_hosts?(url)
+  ignore_hosts = ENV.fetch('IGNORE_HOSTS') { 'localhost' }
+  ignore_hosts = ignore_hosts.split(',')
+  ignore_hosts.any? { |ignore_host| URI.parse(url).host.index(ignore_host).nil? }
+end
+
 def parse(message)
   p message
 
   url = get_url(message)
   return nil if url.nil?
+  return nil if ignore_hosts?(url)
 
   ogp_data = ogp_parse(url)
   return nil if ogp_data.nil?
@@ -107,16 +115,7 @@ rescue StandardError => e
 end
 
 if $PROGRAM_NAME == __FILE__
-  # p parse("https://twitter.com/bra_x_bla/status/1163057960114884608")
   # p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690').nil?
-  # p parse('https://www.thanko.jp/shopdetail/000000003314/')
-  # p parse('https://note.mu/rangatarou/n/n6541adc4c855').nil?
-  # p parse('https://ift.tt/2X2Khle ogp').nil?
-  # p parse('ogp https://www.bbc.com/japanese/48767764').nil?
   # p parse('http://ogp.me について教えて').nil?
-  # p parse('https://ref.xaio.jp/ruby/classes/string/split について教えて ogp').nil?
-  # p parse('https://www.toyomaru.jp/main/machine/sushizanmai_gokujyou/').nil?
-
   # p parse('https://gamebiz.jp/?p=241852 ogp').nil?
-  # p parse('https://qiita.com/akicho8/items/efe59578f12d6b7f5626 ogp').nil?
 end
