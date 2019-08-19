@@ -5,6 +5,14 @@ require 'open-uri'
 require 'nokogiri'
 
 def getOpenGraph(url)
+  if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
+    return {
+      title: '',
+      image_url: url,
+      description: ''
+    }
+  end
+
   charset = nil
   html = open(url) do |f|
     charset = f.charset # 文字種別を取得
