@@ -4,7 +4,7 @@ require 'faraday'
 require 'open-uri'
 require 'nokogiri'
 
-def getOpenGraph(url)
+def get_open_graph_data(url)
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
     return {
       title: '',
@@ -24,7 +24,6 @@ def getOpenGraph(url)
   data = {}
 
   site_name_content = doc.css('//meta[property="og:site_name"]/@content')
-
   data[:title] = if site_name_content.empty?
                    doc.title.to_s
                  else
@@ -54,7 +53,7 @@ end
 
 def ogp_parse(url)
   p url = get_url_expander(url)
-  data = getOpenGraph(url)
+  data = get_open_graph_data(url)
 
   if data.nil?
     return {
