@@ -89,7 +89,7 @@ end
 def ignore_hosts?(url)
   ignore_hosts = ENV.fetch('IGNORE_HOSTS') { 'localhost' }
   ignore_hosts = ignore_hosts.split(',')
-  ignore_hosts.any? { |ignore_host| URI.parse(url).host.index(ignore_host).nil? }
+  ignore_hosts.all? { |ignore_host| URI.parse(url).host.index(ignore_host).nil? }
 end
 
 def parse(message)
