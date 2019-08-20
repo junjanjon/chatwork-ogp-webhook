@@ -97,7 +97,7 @@ def parse(message)
 
   url = get_url(message)
   return nil if url.nil?
-  return nil if ignore_hosts?(url)
+  return nil unless ignore_hosts?(url)
 
   ogp_data = ogp_parse(url)
   return nil if ogp_data.nil?
