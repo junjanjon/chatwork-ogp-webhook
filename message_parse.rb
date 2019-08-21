@@ -24,12 +24,7 @@ def get_open_graph_data(url)
 
   data = {}
 
-  site_name_content = doc.css('//meta[property="og:site_name"]/@content')
-  data[:title] = if site_name_content.empty?
-                   doc.title.to_s
-                 else
-                   site_name_content.to_s
-                 end
+  data[:title] = doc.title.to_s
 
   description_content = doc.css('//meta[property="og:description"]/@content')
   data[:description] = if description_content.empty?
