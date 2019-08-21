@@ -68,6 +68,7 @@ def ogp_parse(url)
 end
 
 def get_url(message)
+  message = message.gsub(/\[qt\].*\[\/qt\]/m, '')
   match_result = message.match(/(http[^ \s\r\n\[]*)/)
   return nil if match_result.nil?
 
