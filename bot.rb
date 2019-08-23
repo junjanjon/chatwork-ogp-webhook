@@ -36,7 +36,7 @@ def main
       next
     end
 
-    messages[-[messages.length, 7].min..-1].reject { |message| message.account.account_id == me_account_id }.each do |data|
+    messages[-[messages.length, 3].min..-1].reject { |message| message.account.account_id == me_account_id }.each do |data|
       ogp_data = parse(data.body)
       next if ogp_data.nil?
 
