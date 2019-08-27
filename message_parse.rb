@@ -37,7 +37,7 @@ def get_open_graph_data(url)
   data[:image_url] = doc.css('//meta[property="og:image"]/@content').first.to_s
   data
 rescue StandardError => e
-  p "失敗にゃ #{e}"
+  p "get_open_graph_data に失敗したにゃ #{e} #{e.backtrace}"
   nil
 end
 
@@ -99,15 +99,19 @@ def parse(message)
   ogp_data = ogp_parse(url)
   return nil if ogp_data.nil?
 
-  unless ogp_data[:image_url].nil? || ogp_data[:image_url].empty?
-    filename = download_image_file(ogp_data[:image_url])
-    ogp_data[:filename] = filename
-    ogp_data[:title] = filename if ogp_data[:title].empty?
+  begin
+    unless ogp_data[:image_url].nil? || ogp_data[:image_url].empty?
+      filename = download_image_file(ogp_data[:image_url])
+      ogp_data[:filename] = filename
+      ogp_data[:title] = filename if ogp_data[:title].empty?
+    end
+  rescue StandardError => e
+    p "イメージのダウンロードに失敗したにゃ #{e} #{e.backtrace}"
   end
 
   ogp_data
 rescue StandardError => e
-  p "失敗したにゃ #{e} #{e.backtrace}"
+  p "全体的に失敗したにゃ #{e} #{e.backtrace}"
   nil
 end
 
