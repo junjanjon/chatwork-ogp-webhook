@@ -21,7 +21,7 @@ def read_room(room_id:)
   messages = ChatWork::Message.get(room_id: room_id, force: true)
   ChatWork::Message.read(room_id: room_id, message_id: messages.last.message_id)
 rescue StandardError => e
-  p "失敗したにゃ #{e} #{e.backtrace}"
+  p "既読失敗したにゃ #{e} #{e.backtrace}"
 end
 
 def main
@@ -51,7 +51,7 @@ def main
       end
     end
 
-    ChatWork::Message.read(room_id: room.room_id, message_id: messages.last.message_id)
+    read_room(room_id: room.room_id)
   end
 end
 
