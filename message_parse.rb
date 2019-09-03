@@ -4,6 +4,7 @@ require 'faraday'
 require 'open-uri'
 require 'nokogiri'
 require 'uri'
+require 'fileutils'
 
 def get_open_graph_data(url)
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
@@ -48,6 +49,29 @@ def get_url_expander(url)
   url_expander.chomp
 end
 
+# Rubyで画像ファイルの種別を判定 | 酒と涙とRubyとRailsと
+# https://morizyun.github.io/ruby/tips-image-type-check-png-jpeg-gif.html
+def image_type(file_path)
+  File.open(file_path, 'rb') do |f|
+    begin
+      header = f.read(8)
+      f.seek(-12, IO::SEEK_END)
+      footer = f.read(12)
+    rescue
+      return nil
+    end
+
+    if header[0, 2].unpack('H*') == %w(ffd8) && footer[-2, 2].unpack('H*') == %w(ffd9)
+      return 'jpg'
+    elsif header[0, 3].unpack('A*') == %w(GIF) && footer[-1, 1].unpack('H*') == %w(3b)
+      return 'gif'
+    elsif header[0, 8].unpack('H*') == %w(89504e470d0a1a0a) && footer[-12,12].unpack('H*') == %w(0000000049454e44ae426082)
+      return 'png'
+    end
+  end
+  nil
+end
+
 def ogp_parse(url)
   p url = get_url_expander(url)
   data = get_open_graph_data(url)
@@ -80,7 +104,13 @@ def download_image_file(image_url)
   response = Faraday.get(image_url)
   filename = 'OGP_' + image_url.split('/').last.chomp(':large').split('?')[0]
   File.write(filename, response.body)
-  filename
+  return filename unless File.extname(filename) == ''
+
+  extname = image_type(filename)
+  return filename if extname.nil?
+  final_filename = filename + '.' + extname
+  FileUtils.copy(filename, final_filename)
+  final_filename
 end
 
 def ignore_hosts?(url)
