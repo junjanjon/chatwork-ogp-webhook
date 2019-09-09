@@ -89,7 +89,7 @@ def ogp_parse(url)
     description: data[:description].gsub(/'/, '')
   }
 
-  p data
+  data
 end
 
 def get_url(message)
@@ -104,11 +104,10 @@ def download_image_file(image_url)
   response = Faraday.get(image_url)
   filename = 'OGP_' + image_url.split('/').last.chomp(':large').split('?')[0]
   File.write(filename, response.body)
-  return filename unless File.extname(filename) == ''
-
   extname = image_type(filename)
   return filename if extname.nil?
-  final_filename = filename + '.' + extname
+  final_filename = File.basename(filename, ".*") + '.' + extname
+  return filename if filename == final_filename
   FileUtils.copy(filename, final_filename)
   final_filename
 end
@@ -120,7 +119,7 @@ def ignore_hosts?(url)
 end
 
 def parse(message)
-  p message
+  message
 
   url = get_url(message)
   return nil if url.nil?
@@ -146,6 +145,7 @@ rescue StandardError => e
 end
 
 if $PROGRAM_NAME == __FILE__
+  # p parse('https://www.pixiv.net/member_illust.php?mode=medium&illust_id=76233141').nil?
   # p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690').nil?
   # p parse('http://ogp.me について教えて').nil?
   # p parse('https://gamebiz.jp/?p=241852 ogp').nil?
