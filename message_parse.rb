@@ -5,8 +5,28 @@ require 'open-uri'
 require 'nokogiri'
 require 'uri'
 require 'fileutils'
+require 'json'
+
+def get_open_graph_data_for_twitter(url)
+  url = "https://api.twitter.com/1/statuses/oembed.json?url=#{url}"
+
+  charset = nil
+  html = open(url) do |f|
+    charset = f.charset # 文字種別を取得
+    f.read # htmlを読み込んで変数htmlに渡す
+  end
+
+  json = JSON.parse(html)
+  {
+    title: json["author_name"],
+    image_url: nil,
+    description: Nokogiri::HTML.parse(json["html"], nil).xpath("/html/body").text,
+  }
+end
 
 def get_open_graph_data(url)
+  return get_open_graph_data_for_twitter(url) if URI.parse(url).host == 'twitter.com'
+
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
     return {
       title: '',
@@ -26,7 +46,6 @@ def get_open_graph_data(url)
   data = {}
 
   data[:title] = doc.title.to_s
-  data[:title] = 'Twitter' unless URI.parse(url).host.index('twitter.com').nil?
 
   description_content = doc.css('//meta[property="og:description"]/@content')
   data[:description] = if description_content.empty?
