@@ -16,7 +16,7 @@ def get_open_graph_data(url)
   end
 
   charset = nil
-  html = open(url, "User-Agent" => "bot") do |f|
+  html = open(url, 'User-Agent' => 'bot') do |f|
     charset = f.charset # 文字種別を取得
     f.read # htmlを読み込んで変数htmlに渡す
   end
@@ -26,6 +26,7 @@ def get_open_graph_data(url)
   data = {}
 
   data[:title] = doc.title.to_s
+  data[:title] = 'twitter' if URI.parse(url).host == 'twitter.com'
 
   description_content = doc.css('//meta[property="og:description"]/@content')
   data[:description] = if description_content.empty?
@@ -59,15 +60,15 @@ def image_type(file_path)
       header = f.read(8)
       f.seek(-12, IO::SEEK_END)
       footer = f.read(12)
-    rescue
+    rescue StandardError
       return nil
     end
 
-    if header[0, 2].unpack('H*') == %w(ffd8) && footer[-2, 2].unpack('H*') == %w(ffd9)
+    if header[0, 2].unpack('H*') == %w[ffd8] && footer[-2, 2].unpack('H*') == %w[ffd9]
       return 'jpg'
-    elsif header[0, 3].unpack('A*') == %w(GIF) && footer[-1, 1].unpack('H*') == %w(3b)
+    elsif header[0, 3].unpack('A*') == %w[GIF] && footer[-1, 1].unpack('H*') == %w[3b]
       return 'gif'
-    elsif header[0, 8].unpack('H*') == %w(89504e470d0a1a0a) && footer[-12,12].unpack('H*') == %w(0000000049454e44ae426082)
+    elsif header[0, 8].unpack('H*') == %w[89504e470d0a1a0a] && footer[-12, 12].unpack('H*') == %w[0000000049454e44ae426082]
       return 'png'
     end
   end
@@ -95,7 +96,7 @@ def ogp_parse(url)
 end
 
 def get_url(message)
-  message = message.gsub(/\[qt\].*\[\/qt\]/m, '')
+  message = message.gsub(%r{\[qt\].*\[/qt\]}m, '')
   match_result = message.match(/(http[^ \s\r\n\[]*)/)
   return nil if match_result.nil?
 
@@ -108,8 +109,10 @@ def download_image_file(image_url)
   File.write(filename, response.body)
   extname = image_type(filename)
   return filename if extname.nil?
-  final_filename = File.basename(filename, ".*") + '.' + extname
+
+  final_filename = File.basename(filename, '.*') + '.' + extname
   return filename if filename == final_filename
+
   FileUtils.copy(filename, final_filename)
   final_filename
 end
@@ -121,8 +124,6 @@ def ignore_hosts?(url)
 end
 
 def parse(message)
-  message
-
   url = get_url(message)
   return nil if url.nil?
   return nil unless ignore_hosts?(url)
@@ -144,11 +145,4 @@ def parse(message)
 rescue StandardError => e
   p "全体的に失敗したにゃ #{e} #{e.backtrace}"
   nil
-end
-
-if $PROGRAM_NAME == __FILE__
-  p parse('https://www.pixiv.net/member_illust.php?mode=medium&illust_id=76233141')
-  p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690')
-  p parse('http://ogp.me について教えて')
-  p parse('https://gamebiz.jp/?p=241852 ogp')
 end
