@@ -1,32 +1,11 @@
 # frozen_string_literal: true
 
+require 'selenium-webdriver'
 require 'faraday'
-require 'open-uri'
-require 'nokogiri'
 require 'uri'
 require 'fileutils'
-require 'json'
-
-def get_open_graph_data_for_twitter(url)
-  url = "https://api.twitter.com/1/statuses/oembed.json?url=#{url}"
-
-  charset = nil
-  html = open(url) do |f|
-    charset = f.charset # 文字種別を取得
-    f.read # htmlを読み込んで変数htmlに渡す
-  end
-
-  json = JSON.parse(html)
-  {
-    title: json["author_name"],
-    image_url: nil,
-    description: Nokogiri::HTML.parse(json["html"], nil).xpath("/html/body").text,
-  }
-end
 
 def get_open_graph_data(url)
-  return get_open_graph_data_for_twitter(url) if URI.parse(url).host == 'twitter.com'
-
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
     return {
       title: '',
@@ -35,27 +14,40 @@ def get_open_graph_data(url)
     }
   end
 
-  charset = nil
-  html = open(url) do |f|
-    charset = f.charset # 文字種別を取得
-    f.read # htmlを読み込んで変数htmlに渡す
+  Selenium::WebDriver::Chrome::Service.driver_path = './chromedriver'
+
+  Selenium::WebDriver.logger.level = :warn
+  options = Selenium::WebDriver::Chrome::Options.new
+  options.add_argument('--headless')
+  options.add_argument('--user-agent=bot')
+
+  driver = Selenium::WebDriver.for :chrome, options: options
+
+  driver.manage.timeouts.implicit_wait = 10
+  Selenium::WebDriver::Wait.new(timeout: 60)
+  driver.get(url)
+
+  begin
+    description_element = driver.find_element(:xpath, "//meta[@name='description']")
+    description_content = description_element.attribute('content')
+  rescue StandardError => e
+    puts e
+    description_content = nil
   end
 
-  doc = Nokogiri::HTML.parse(html, charset)
+  begin
+    image_url_element = driver.find_element(:xpath, '//meta[@property="og:image"]')
+    image_url = image_url_element.attribute('content')
+  rescue StandardError => e
+    puts e
+    image_url = nil
+  end
 
-  data = {}
-
-  data[:title] = doc.title.to_s
-
-  description_content = doc.css('//meta[property="og:description"]/@content')
-  data[:description] = if description_content.empty?
-                         doc.css('//meta[name$="escription"]/@content').to_s
-                       else
-                         description_content.to_s
-                       end
-
-  data[:image_url] = doc.css('//meta[property="og:image"]/@content').first.to_s
-  data
+  {
+    title: driver.title,
+    description: description_content.to_s,
+    image_url: image_url
+  }
 rescue StandardError => e
   p "get_open_graph_data に失敗したにゃ #{e} #{e.backtrace}"
   nil
@@ -63,9 +55,12 @@ end
 
 def get_url_expander(url)
   url_expander = `curl -I -s "#{url}" | grep -i Location | cut -d ' ' -f 2`
+  url_expander = url_expander.chomp
   return url if url_expander.empty?
+  return url_expander unless url_expander[0] == '/'
 
-  url_expander.chomp
+  url_generic = URI.parse(url)
+  "#{url_generic.scheme}://#{url_generic.host}#{url_expander}"
 end
 
 # Rubyで画像ファイルの種別を判定 | 酒と涙とRubyとRailsと
@@ -76,15 +71,15 @@ def image_type(file_path)
       header = f.read(8)
       f.seek(-12, IO::SEEK_END)
       footer = f.read(12)
-    rescue
+    rescue StandardError
       return nil
     end
 
-    if header[0, 2].unpack('H*') == %w(ffd8) && footer[-2, 2].unpack('H*') == %w(ffd9)
+    if header[0, 2].unpack('H*') == %w[ffd8] && footer[-2, 2].unpack('H*') == %w[ffd9]
       return 'jpg'
-    elsif header[0, 3].unpack('A*') == %w(GIF) && footer[-1, 1].unpack('H*') == %w(3b)
+    elsif header[0, 3].unpack('A*') == %w[GIF] && footer[-1, 1].unpack('H*') == %w[3b]
       return 'gif'
-    elsif header[0, 8].unpack('H*') == %w(89504e470d0a1a0a) && footer[-12,12].unpack('H*') == %w(0000000049454e44ae426082)
+    elsif header[0, 8].unpack('H*') == %w[89504e470d0a1a0a] && footer[-12, 12].unpack('H*') == %w[0000000049454e44ae426082]
       return 'png'
     end
   end
@@ -100,19 +95,17 @@ def ogp_parse(url)
       title: 'OpenGraphReader 失敗',
       description: ''
     }
-   end
+  end
 
-  data = {
+  {
     title: data[:title].gsub(/'/, ''),
     image_url: data[:image_url],
     description: data[:description].gsub(/'/, '')
   }
-
-  data
 end
 
 def get_url(message)
-  message = message.gsub(/\[qt\].*\[\/qt\]/m, '')
+  message = message.gsub(%r{\[qt\].*\[/qt\]}m, '')
   match_result = message.match(/(http[^ \s\r\n\[]*)/)
   return nil if match_result.nil?
 
@@ -125,8 +118,10 @@ def download_image_file(image_url)
   File.write(filename, response.body)
   extname = image_type(filename)
   return filename if extname.nil?
-  final_filename = File.basename(filename, ".*") + '.' + extname
+
+  final_filename = File.basename(filename, '.*') + '.' + extname
   return filename if filename == final_filename
+
   FileUtils.copy(filename, final_filename)
   final_filename
 end
@@ -138,8 +133,6 @@ def ignore_hosts?(url)
 end
 
 def parse(message)
-  message
-
   url = get_url(message)
   return nil if url.nil?
   return nil unless ignore_hosts?(url)
@@ -161,11 +154,4 @@ def parse(message)
 rescue StandardError => e
   p "全体的に失敗したにゃ #{e} #{e.backtrace}"
   nil
-end
-
-if $PROGRAM_NAME == __FILE__
-  # p parse('https://www.pixiv.net/member_illust.php?mode=medium&illust_id=76233141').nil?
-  # p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690').nil?
-  # p parse('http://ogp.me について教えて').nil?
-  # p parse('https://gamebiz.jp/?p=241852 ogp').nil?
 end
