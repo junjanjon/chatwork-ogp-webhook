@@ -26,6 +26,7 @@ def get_open_graph_data(url)
   data = {}
 
   data[:title] = doc.title.to_s
+  data[:title] = "twitter" if URI.parse(url).host == "twitter.com"
 
   description_content = doc.css('//meta[property="og:description"]/@content')
   data[:description] = if description_content.empty?
