@@ -5,28 +5,8 @@ require 'open-uri'
 require 'nokogiri'
 require 'uri'
 require 'fileutils'
-require 'json'
-
-def get_open_graph_data_for_twitter(url)
-  url = "https://api.twitter.com/1/statuses/oembed.json?url=#{url}"
-
-  charset = nil
-  html = open(url) do |f|
-    charset = f.charset # 文字種別を取得
-    f.read # htmlを読み込んで変数htmlに渡す
-  end
-
-  json = JSON.parse(html)
-  {
-    title: json["author_name"],
-    image_url: nil,
-    description: Nokogiri::HTML.parse(json["html"], nil).xpath("/html/body").text,
-  }
-end
 
 def get_open_graph_data(url)
-  return get_open_graph_data_for_twitter(url) if URI.parse(url).host == 'twitter.com'
-
   if url.end_with?('.png') || url.end_with?('.jpg') || url.end_with?('.jpeg')
     return {
       title: '',
@@ -36,7 +16,7 @@ def get_open_graph_data(url)
   end
 
   charset = nil
-  html = open(url) do |f|
+  html = open(url, "User-Agent" => "bot") do |f|
     charset = f.charset # 文字種別を取得
     f.read # htmlを読み込んで変数htmlに渡す
   end
@@ -63,9 +43,12 @@ end
 
 def get_url_expander(url)
   url_expander = `curl -I -s "#{url}" | grep -i Location | cut -d ' ' -f 2`
+  url_expander = url_expander.chomp
   return url if url_expander.empty?
+  return url_expander unless url_expander[0] == '/'
 
-  url_expander.chomp
+  url_generic = URI.parse(url)
+  "#{url_generic.scheme}://#{url_generic.host}#{url_expander}"
 end
 
 # Rubyで画像ファイルの種別を判定 | 酒と涙とRubyとRailsと
@@ -164,8 +147,8 @@ rescue StandardError => e
 end
 
 if $PROGRAM_NAME == __FILE__
-  # p parse('https://www.pixiv.net/member_illust.php?mode=medium&illust_id=76233141').nil?
-  # p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690').nil?
-  # p parse('http://ogp.me について教えて').nil?
-  # p parse('https://gamebiz.jp/?p=241852 ogp').nil?
+  p parse('https://www.pixiv.net/member_illust.php?mode=medium&illust_id=76233141')
+  p parse('https://twitter.com/LoveLive_staff/status/1156374027180658690')
+  p parse('http://ogp.me について教えて')
+  p parse('https://gamebiz.jp/?p=241852 ogp')
 end
