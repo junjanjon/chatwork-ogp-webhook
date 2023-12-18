@@ -16,7 +16,7 @@ def get_open_graph_data(url)
   end
 
   charset = nil
-  html = open(url, 'User-Agent' => 'bot') do |f|
+  html = URI.open(url, 'User-Agent' => 'bot') do |f|
     charset = f.charset # 文字種別を取得
     f.read # htmlを読み込んで変数htmlに渡す
   end
@@ -84,7 +84,7 @@ def ogp_parse(url)
       title: 'OpenGraphReader 失敗',
       description: ''
     }
-   end
+  end
 
   data = {
     title: data[:title].gsub(/'/, ''),
